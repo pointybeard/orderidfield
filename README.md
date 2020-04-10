@@ -1,25 +1,29 @@
 # Unique Order Identifier Field for Symphony CMS
 
--   Version: v2.0.0
+-   Version: 2.0.0
 -   Date: April 10 2020
 -   [Release notes](https://github.com/pointybeard/unique_order_identifier_field/blob/master/CHANGELOG.md)
 -   [GitHub repository](https://github.com/pointybeard/unique_order_identifier_field)
 
 Field for [Symphony CMS](http://getsymphony.com) that auto-populates with a unique value that can be used for tasks like generating Order numbers in eCommerce systems. Once an order identifier has been set, it cannot be modified and will never be used again.
 
-## Installation
-
-This is an extension for [Symphony CMS](http://getsymphony.com). Add it to the `/extensions` folder of your Symphony CMS installation, then enable it through the interface.
-
 ### Requirements
 
-This extension requires PHP 7.3 or greater.
+This extension requires PHP 7.3 or greater and depends on the following Composer libraries:
 
-The [Console Extension for Symphony CMS](https://github.com/pointybeard/console) must also be installed.
+-   [Symphony CMS: Extended Base Class Library](https://github.com/pointybeard/symphony-extended)
 
-This extension depends on the following Composer libraries:
+## Installation
 
--   [PHP Helpers](https://github.com/pointybeard/helpers)
+This is an extension for [Symphony CMS](http://getsymphony.com).
+
+- Download or clone this repository and add it to the `/extensions` directory of your Symphony CMS installation.
+- Run `composer update` from inside the `/extensions/unique_order_identifier_field` directory
+- Finally, install it via the Symphony CMS  Systems > Extensions administration interface.
+
+## Upgrading from version 1.x
+
+Currently there is no upgrade path from 1.x to 2.x (although one may be provided in the future). It is suggested the 2.x release be treated as an entirely new field since it has seen not only a name change, but, also a major internal overhaul.
 
 ## Support
 

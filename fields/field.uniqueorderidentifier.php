@@ -10,7 +10,7 @@ class FieldUniqueOrderIdentifier extends Field implements ExportableField, Impor
         $this->_name = __('Unique Order Identifier');
         $this->_required = true;
 
-        $this->set('required', 'no');
+        $this->set('required', 'yes');
     }
 
     public function commit()
@@ -20,7 +20,7 @@ class FieldUniqueOrderIdentifier extends Field implements ExportableField, Impor
         }
 
         return FieldManager::saveSettings($this->get('id'), [
-            'sequence_length' => (int)$this->get('sequence_length'),
+            'sequence_length' => (int) $this->get('sequence_length'),
             'prefix' => strtoupper($this->get('prefix')),
             'enable_rand' => ($this->get('enable_rand') ? $this->get('enable_rand') : 'off'),
             'enable_checksum' => ($this->get('enable_checksum') ? $this->get('enable_checksum') : 'off'),
@@ -33,13 +33,13 @@ class FieldUniqueOrderIdentifier extends Field implements ExportableField, Impor
 
         if (strlen(trim($this->get('prefix'))) <= 0) {
             $errors['prefix'] = __('This is a required field.');
-        } elseif(false == preg_match('@^[A-Z]$@i', $this->get('prefix'))) {
-            $errors['prefix'] = __('Must be a single character from A-Z.');
+        } elseif (false == preg_match('@^[A-Z]{1,3}$@i', $this->get('prefix'))) {
+            $errors['prefix'] = __('Must be 1 to 3 characters from A-Z.');
         }
 
         if (strlen(trim($this->get('sequence_length'))) <= 0) {
             $errors['sequence_length'] = __('This is a required field.');
-        } elseif(false == preg_match('@^[1-9]$@i', $this->get('sequence_length'))) {
+        } elseif (false == preg_match('@^[1-9]$@i', $this->get('sequence_length'))) {
             $errors['sequence_length'] = __('Must be a number between 1 and 9.');
         }
 
@@ -85,7 +85,7 @@ class FieldUniqueOrderIdentifier extends Field implements ExportableField, Impor
      *
      * e.g. R00001-837-19
      *
-     * PREFIX       - A single, uppercase, character specified in the section field
+     * PREFIX       - Up to 3, uppercase, characters specified in the section field
      *                  settings
      *
      * SEQ          - A zero padded number based on sequence of existing values. The
@@ -104,23 +104,28 @@ class FieldUniqueOrderIdentifier extends Field implements ExportableField, Impor
     private function generateIdentifier(int &$seq = null)
     {
         // Find the current sequence number
-        $lastInSequence = Symphony::Database()->fetchVar('value', 0, sprintf(
+        $lastInSequence = Symphony::Database()->fetchVar('seq', 0, sprintf(
             'SELECT `seq` FROM `tbl_entries_data_%d` ORDER BY `seq` DESC LIMIT 1',
             $this->get('id')
         ));
 
-        $seq = $lastInSequence ?? 1;
-        $seq = str_pad((int) $seq, $this->get('sequence_length'), '0', STR_PAD_LEFT);
+        $seq = (
+            null == $lastInSequence
+            ? 1
+            : (int) $lastInSequence + 1
+        );
+
+        $seq = str_pad((string) $seq, (int) $this->get('sequence_length'), '0', STR_PAD_LEFT);
 
         // Put it all together now
-        $identifer = "{$this->get('prefix')}{$seq}";
-        if (true == $this->get('enable_rand')) {
+        $identifier = "{$this->get('prefix')}{$seq}";
+        if ('yes' == $this->get('enable_rand')) {
             $rand = rand(100, 999);
-            $identifer = sprintf(
+            $identifier = sprintf(
                 '%s-%s%s',
-                $identifer,
+                $identifier,
                 $rand,
-                true == $this->get('enable_checksum')
+                'yes' == $this->get('enable_checksum')
                     ? '-'.$this->sum_digits_in_string("{$seq}{$rand}")
                     : ''
             );
@@ -150,17 +155,18 @@ class FieldUniqueOrderIdentifier extends Field implements ExportableField, Impor
             $entryId
         ));
 
-        return false == $identifier ? null : (object) $identifier;
+        return false == $identifier || true == empty($identifier) ? null : (object) $identifier[0];
     }
 
-    private function isIdenfitierUnique(string $value): bool
+    private function isIdenfitierUnique(string $value, ?int $entryId = null): bool
     {
         $count = (int) Symphony::Database()->fetchVar('count', 0, sprintf(
             "SELECT COUNT(*) as `count`
             FROM `tbl_entries_data_%d`
-            WHERE `value` = '%s'",
+            WHERE `value` = '%s' %s",
             $this->get('id'),
-            $value
+            $value,
+            null != $entryId ? " AND `entry_id` != {$entryId}" : ''
         ));
 
         return $count <= 0;
@@ -209,7 +215,6 @@ class FieldUniqueOrderIdentifier extends Field implements ExportableField, Impor
             $settings['default_state'] = 'on';
         }
     }
-
 
     public function displaySettingsPanel(XMLElement &$wrapper, $errors = null)
     {
@@ -277,7 +282,20 @@ class FieldUniqueOrderIdentifier extends Field implements ExportableField, Impor
 
     public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entryId = null)
     {
-        $value = General::sanitize(isset($data['value']) ? $data['value'] : $this->generateIdentifier($seq));
+        // An order idenfitier cannot be changed once it is saved. Look up the existing
+        // value first and if it's set, use that instead.
+        if (null != $entryId && null != $identifier = $this->getCurrentIdentifier((int) $entryId)) {
+            if (strlen(trim($identifier->value)) > 0) {
+                $data['value'] = $identifier->value;
+            }
+        }
+
+        $value = General::sanitize(
+            true == isset($data['value'])
+            ? $data['value']
+            : $this->generateIdentifier($seq)
+        );
+
         $label = Widget::Label($this->get('label'));
 
         // if ("yes" !== $this->get("required")) {
@@ -303,20 +321,19 @@ class FieldUniqueOrderIdentifier extends Field implements ExportableField, Impor
             $data = $data['value'];
         }
 
-        if (0 == strlen(trim($data))) {
+        if (null == $data || 0 == strlen(trim($data))) {
             $data = $this->generateIdentifier($seq);
         }
 
         // An order idenfitier cannot be changed once it is saved. Look up the existing
         // value first and if it's set, use that instead.
-        if (null != $entryId) {
-            $identifier = $this->getCurrentIdentifier($entryId);
-            if (null != $identifier && strlen(trim($identifier->value)) > 0) {
+        if (null != $entryId && null != $identifier = $this->getCurrentIdentifier((int) $entryId)) {
+            if (strlen(trim($identifier->value)) > 0) {
                 $data = $identifier->value;
             }
         }
 
-        if (false == $this->isIdenfitierUnique($data)) {
+        if (false == $this->isIdenfitierUnique($data, (int) $entryId)) {
             $message = "Identifier {$data} is not unique.";
 
             return self::__ERROR__;
@@ -329,21 +346,20 @@ class FieldUniqueOrderIdentifier extends Field implements ExportableField, Impor
     {
         $status = self::__OK__;
 
-        if (0 == strlen(trim($data))) {
+        if (null == $data || 0 == strlen(trim($data))) {
             $data = $this->generateIdentifier($seq);
         }
 
         // An order idenfitier cannot be changed once it is saved. Look up the existing
         // value first and if it's set, use that instead.
-        if (null != $entryId) {
-            $identifier = $this->getCurrentIdentifier($entryId);
-            if (null != $identifier && strlen(trim($identifier->value)) > 0) {
+        if (null != $entryId && null != $identifier = $this->getCurrentIdentifier((int) $entryId)) {
+            if (strlen(trim($identifier->value)) > 0) {
                 $data = $identifier->value;
                 $seq = $identifier->seq;
             }
         }
 
-        if (false == $this->isIdenfitierUnique($data)) {
+        if (false == $this->isIdenfitierUnique($data, (int) $entryId)) {
             $message = "Identifier {$data} is not unique.";
             $status = self::__ERROR__;
 

@@ -1,0 +1,27 @@
+{
+    "name": "pointybeard/unique-order-identifier-field",
+    "description": "Auto-populates with a unique value for use an order id",
+    "homepage": "https://github.com/pointybeard/unique_order_identifier_field",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Alannah Kearney",
+            "email": "hi@alannahkearney.com",
+            "homepage": "http://alannahkearney.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": ">=7.3",
+        "pointybeard/symphony-extended": "~1.0"
+    },
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "pointybeard\\Symphony\\Extensions\\": "src/"
+        },
+        "files": [
+            "extension.driver.php"
+        ]
+    }
+}

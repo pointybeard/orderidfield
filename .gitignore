@@ -1,1 +1,4 @@
-/vendor/
+/vendor
+.DS_Store
+composer.lock
+.php_cs.cache

@@ -1,0 +1,32 @@
+{
+    "id": "unique_order_identifier_field",
+    "name": "Unique Order Identifier Field",
+    "description": "Field for Symphony CMS that auto-populates with a unique value that can be used for tasks like generating Order numbers in eCommerce systems. Once an order identifier has been set, it cannot be modified and will never be used again.",
+    "repo": "https://github.com/pointybeard/unique_order_identifier_field.git",
+    "homepage": "https://github.com/pointybeard/unique_order_identifier_field",
+    "type": [
+        "Field"
+    ],
+    "authors": [
+        {
+            "name": "Alannah Kearney",
+            "email": "hi@alannahkearney.com",
+            "homepage": "http://alannahkearney.com",
+            "role": "Developer"
+        },
+    ],
+    "releases": [
+        {
+            "version": "2.0.0",
+            "date": "2020-04-10",
+            "min": "2.7.10",
+            "max": "2.7.x"
+        },
+        {
+            "version": "1.0.0",
+            "date": "2016-12-09",
+            "min": "2.6",
+            "max": "2.6.x"
+        }
+    ]
+}
